@@ -1,4 +1,4 @@
-name: Sync Migrations from Test to Demo (PR)
+name: Sync Migrations from Test to Demo
 
 on:
   push:
@@ -57,33 +57,15 @@ jobs:
             exit 1
           fi
 
-      - name: Create a new branch for PR
+      - name: Commit and push changes
         run: |
-          # Crea una nueva rama a partir de demo para el PR
-          git checkout -b sync-migrations-to-demo
+          # Verifica si hubo cambios en demo/migrations y realiza commit si es necesario
+          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
 
-      - name: Commit the migration files
-        run: |
-          # Agrega los cambios de la carpeta demo/migrations
-          git add demo/migrations/*  # Solo agrega archivos nuevos o modificados en demo/migrations
-          
-          # Comitea si hay cambios
+          # Solo hace commit y push si hay cambios
           if ! git diff --cached --quiet; then
             git commit -m "Sync migration files from test to demo"
+            git push origin demo || { echo "Push failed"; exit 1; }
           else
-            echo "No changes detected in demo/migrations, skipping commit."
-            exit 0
+            echo "No changes detected, skipping commit."
           fi
-
-      - name: Push the new branch
-        run: |
-          # Empuja la nueva rama al repositorio remoto
-          git push origin sync-migrations-to-demo
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          title: "Sync Migration Files from Test to Demo"
-          body: "This PR syncs migration files from the 'test' branch to 'demo/migrations'."
-          head: "sync-migrations-to-demo"
-          base: "demo"
