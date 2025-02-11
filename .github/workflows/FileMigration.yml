@@ -3,10 +3,10 @@ name: Sync Migrations from Test to Demo
 on:
   push:
     branches:
-      - test  # Este workflow se ejecuta cuando hay un push en la rama 'test'
+      - test  # Se ejecuta cuando hay un push en la rama "test"
 
 permissions:
-  contents: write  # Permiso para escribir en el repositorio
+  contents: write  # Permiso para escribir en el repo
 
 jobs:
   sync:
@@ -32,16 +32,7 @@ jobs:
           git checkout test
           git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
 
-      - name: Check for migration files in test
-        run: |
-          # Verifica que la carpeta test/migrations exista desde la raíz del repositorio
-          if [ ! -d "test/migrations" ]; then
-            echo "No migrations folder found in test, exiting."
-            exit 1
-          fi
-          echo "Migrations folder found in test."
-
-      - name: Switch to demo branch
+      - name: Ensure demo branch is up-to-date
         run: |
           git fetch origin demo
           git checkout demo || git checkout -b demo origin/demo
@@ -49,34 +40,24 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
-          # Asegura que la carpeta demo/migrations existe, si no, la crea
           if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations  # Crea la carpeta si no existe
+            mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
             echo "Created migrations folder in demo."
           fi
 
-      - name: Copy new migration files from test to demo
+      - name: Checkout migration files from test branch to demo branch
         run: |
-          # Verifica que existen archivos en test/migrations
-          echo "Copying migration files from test to demo..."
-          for file in test/migrations/*; do
-            if [ ! -e "demo/migrations/$(basename $file)" ]; then
-              cp "$file" demo/migrations/
-              echo "Copied: $file"
-            else
-              echo "File $(basename $file) already exists in demo/migrations, skipping."
-            fi
-          done
-
-      - name: Verify files copied to demo/migrations
+          echo "Checking out migration files from test branch into demo/migrations..."
+          # Extrae los archivos de la rama test/migrations y los coloca en demo/migrations
+          git checkout test -- test/migrations/
+          
+      - name: Check for new files in demo/migrations and add them
         run: |
-          echo "Listing files in demo/migrations after copy:"
-          ls -l demo/migrations/
+          # Revisa las diferencias entre demo y test en migrations y agrega los archivos que no existen en demo
+          git diff --quiet || git add demo/migrations/*  # Si hay diferencias, agrega los archivos
 
       - name: Commit and push changes
         run: |
-          git add demo/migrations/*  # Asegura que solo los archivos de migrations se agreguen
-          git status  # Verifica qué archivos están siendo agregados
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
