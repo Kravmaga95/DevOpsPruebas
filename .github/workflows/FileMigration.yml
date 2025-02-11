@@ -40,26 +40,31 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
-          # Verifica si demo/migrations existe, si no, la crea en la ruta correcta.
+          # Verifica si demo/migrations existe, si no, la crea en la ruta correcta dentro de la carpeta demo
           if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations  # Crea la carpeta si no existe
+            mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
             echo "Created migrations folder in demo."
           fi
 
-      - name: Checkout migration files from test branch to demo branch
+      - name: Copy migration files from test to demo
         run: |
-          echo "Checking out migration files from test branch into demo/migrations..."
-          # Extrae solo los archivos de test/migrations y los coloca directamente en demo/migrations
-          git checkout test -- test/migrations/*  # Copiar archivos de test/migrations en demo/migrations
-
-      - name: Check for new files in demo/migrations and add them
-        run: |
-          # Revisa si hay cambios en demo/migrations y agrega los archivos nuevos
-          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
+          # Copiar archivos de test/migrations a demo/migrations
+          echo "Copying migration files from test to demo..."
+          
+          # Verifica si la carpeta 'test/migrations' existe en la rama 'test' y luego copia los archivos
+          if [ -d "test/migrations" ]; then
+            cp test/migrations/* demo/migrations/  # Copia los archivos desde test/migrations a demo/migrations
+          else
+            echo "No migrations folder in test, skipping copy."
+            exit 1
+          fi
 
       - name: Commit and push changes
         run: |
-          # Cometer los cambios si hay modificaciones
+          # Verifica si hubo cambios en demo/migrations y realiza commit si es necesario
+          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
+
+          # Solo hace commit y push si hay cambios
           if ! git diff --cached --quiet; then
             git commit -m "Sync migration files from test to demo"
             git push origin demo || { echo "Push failed"; exit 1; }
