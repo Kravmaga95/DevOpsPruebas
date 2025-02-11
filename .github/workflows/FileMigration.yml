@@ -27,11 +27,6 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Ensure test branch is up-to-date
-        run: |
-          git checkout test
-          git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
-
       - name: Ensure demo branch is up-to-date
         run: |
           git fetch origin demo
@@ -46,12 +41,25 @@ jobs:
             echo "Created migrations folder in demo."
           fi
 
-      - name: Copy migration files from test to demo
+      - name: Checkout test branch
         run: |
-          # Verifica si la carpeta 'test/migrations' existe y copia los archivos de migración
+          # Cambia a la rama test
+          git checkout test || { echo "Error checking out test branch"; exit 1; }
+
+      - name: Copy missing migration files from test to demo
+        run: |
+          # Verifica si la carpeta 'test/migrations' existe
           if [ -d "test/migrations" ]; then
-            echo "Copying migration files from test/migrations to demo/migrations..."
-            cp test/migrations/* demo/migrations/  # Copia los archivos desde test/migrations a demo/migrations
+            echo "Checking for missing migration files in demo/migrations..."
+            
+            # Iterar sobre los archivos en test/migrations y copiar los que no están en demo/migrations
+            for file in test/migrations/*; do
+              # Si el archivo no existe en demo/migrations, lo copiamos
+              if [ ! -f "demo/migrations/$(basename $file)" ]; then
+                echo "Copying missing migration file: $(basename $file)"
+                cp "$file" "demo/migrations/"
+              fi
+            done
           else
             echo "No migrations folder in test, skipping copy."
             exit 1
@@ -64,7 +72,7 @@ jobs:
 
           # Solo hace commit y push si hay cambios
           if ! git diff --cached --quiet; then
-            git commit -m "Sync migration files from test to demo"
+            git commit -m "Sync missing migration files from test to demo"
             git push origin demo || { echo "Push failed"; exit 1; }
           else
             echo "No changes detected, skipping commit."
