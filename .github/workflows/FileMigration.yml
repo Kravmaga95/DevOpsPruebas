@@ -39,6 +39,7 @@ jobs:
             echo "No migrations folder found in test, exiting."
             exit 1
           fi
+          echo "Migrations folder found in test."
 
       - name: Switch to demo branch
         run: |
@@ -56,10 +57,8 @@ jobs:
 
       - name: Copy new migration files from test to demo
         run: |
-          # Copia solo los archivos que no existen en demo/migrations
+          # Verifica que existen archivos en test/migrations
           echo "Copying migration files from test to demo..."
-          
-          # Verifica si la carpeta 'test/migrations' tiene archivos
           for file in test/migrations/*; do
             if [ ! -e "demo/migrations/$(basename $file)" ]; then
               cp "$file" demo/migrations/
