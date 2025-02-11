@@ -22,16 +22,18 @@ jobs:
         run: |
           git config --global user.name "kravmaga95"
           git config --global user.email "edwardsalex8034@gmail.com"
+
       - name: Authenticate Git
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+
       - name: Ensure test branch is up-to-date
         run: |
           git checkout test
           git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
+
       - name: Copy migration files from test to temporary folder
         run: |
-          # Verifica si la carpeta 'test/migrations' existe y copia los archivos a una carpeta temporal fuera del repo
           if [ -d "test/migrations" ]; then
             echo "Copying migration files from test/migrations to temporary folder..."
             mkdir -p /tmp/migrations  # Carpeta temporal fuera del repositorio
@@ -40,25 +42,34 @@ jobs:
             echo "No migrations folder in test, skipping copy."
             exit 1
           fi
+
       - name: Checkout demo branch
         run: |
           git fetch origin demo
           git checkout demo || git checkout -b demo origin/demo
           git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
+
       - name: Ensure demo/migrations folder exists
         run: |
-          # Verifica si la carpeta demo/migrations existe, si no, la crea
           if [ ! -d "demo/migrations" ]; then
             mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
             echo "Created migrations folder in demo."
           fi
+
       - name: Copy migration files from temporary folder to demo
         run: |
-          # Copia los archivos de la carpeta temporal a demo/migrations
           echo "Copying migration files from temporary folder to demo/migrations..."
           cp /tmp/migrations/* demo/migrations/
+
       - name: Commit and push changes to demo
         run: |
           git add demo/migrations/*  # Agregar los archivos modificados
-          git commit -m "Sync migration files from test to demo"
-          git push origin demo || { echo "Push failed"; exit 1; }
+          
+          # Verifica si hay cambios antes de hacer commit
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Sync migration files from test to demo"
+            git push origin demo || { echo "Push failed"; exit 1; }
+          fi
+
