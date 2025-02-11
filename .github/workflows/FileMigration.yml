@@ -46,6 +46,18 @@ jobs:
           # Cambia a la rama test
           git checkout test || { echo "Error checking out test branch"; exit 1; }
 
+      - name: List files in test/migrations
+        run: |
+          # Listamos los archivos dentro de test/migrations para ver qué archivos existen
+          echo "Listing files in test/migrations"
+          ls -al test/migrations || echo "No migrations folder in test"
+
+      - name: List files in demo/migrations
+        run: |
+          # Listamos los archivos dentro de demo/migrations para ver qué archivos existen
+          echo "Listing files in demo/migrations"
+          ls -al demo/migrations || echo "No migrations folder in demo"
+
       - name: Copy missing migration files from test to demo
         run: |
           # Verifica si la carpeta 'test/migrations' existe
@@ -58,6 +70,8 @@ jobs:
               if [ ! -f "demo/migrations/$(basename $file)" ]; then
                 echo "Copying missing migration file: $(basename $file)"
                 cp "$file" "demo/migrations/"
+              else
+                echo "File $(basename $file) already exists in demo/migrations, skipping."
               fi
             done
           else
