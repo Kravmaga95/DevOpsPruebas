@@ -58,9 +58,19 @@ jobs:
 
       - name: Copy migrations from test branch to demo branch
         run: |
-          # Copia los archivos de test/migrations a demo/migrations solo si no existen en demo
+          # Asegúrate de estar en la raíz del repositorio para que las rutas sean correctas
           echo "Copying migration files from test to demo..."
-          rsync -av --ignore-existing test/migrations/ demo/migrations/  # Solo copia archivos que no existen en demo/migrations
+          
+          # Hacer checkout de la rama 'test' para obtener las migraciones
+          git checkout test
+
+          # Verifica que la carpeta 'test/migrations' existe y luego usa rsync
+          if [ -d "test/migrations" ]; then
+            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Copia solo los archivos que no existen en demo/migrations
+          else
+            echo "No migrations folder in test, skipping rsync."
+            exit 1
+          fi
 
       - name: Commit and push changes
         run: |
