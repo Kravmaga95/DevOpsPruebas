@@ -54,13 +54,15 @@ jobs:
 
       - name: Check for new files in demo/migrations and add them
         run: |
-          # Revisa las diferencias entre demo y test en migrations y agrega los archivos que no existen en demo
-          git diff --quiet || git add demo/migrations/*  # Si hay diferencias, agrega los archivos
+          # Revisa si hay cambios en demo/migrations y agrega los archivos nuevos
+          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
 
       - name: Commit and push changes
         run: |
-          if git diff --cached --quiet; then
-            echo "No changes detected, skipping commit."
-          else
+          # Cometer los cambios si hay modificaciones
+          if ! git diff --cached --quiet; then
             git commit -m "Sync migration files from test to demo"
             git push origin demo || { echo "Push failed"; exit 1; }
+          else
+            echo "No changes detected, skipping commit."
+          fi
