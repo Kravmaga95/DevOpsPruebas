@@ -48,9 +48,9 @@ jobs:
       - name: Checkout migration files from test branch to demo branch
         run: |
           echo "Checking out migration files from test branch into demo/migrations..."
-          # Extrae los archivos de la rama test/migrations y los coloca en demo/migrations
-          git checkout test -- test/migrations/
-          
+          # Extrae los archivos de la rama test/migrations y los coloca directamente en demo/migrations
+          git checkout test -- test/migrations/*  # Usamos este comando para copiar solo los archivos, no las carpetas
+
       - name: Check for new files in demo/migrations and add them
         run: |
           # Revisa las diferencias entre demo y test en migrations y agrega los archivos que no existen en demo
