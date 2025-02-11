@@ -47,6 +47,10 @@ jobs:
           git checkout -B demo origin/demo || git checkout -b demo
           git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
 
+      - name: Ensure migrations folder exists in demo
+        run: |
+          mkdir -p migrations  # Crea la carpeta si no existe
+
       - name: Sync migration files
         run: |
           if [ -d "/tmp/migrations_backup" ] && [ "$(ls -A /tmp/migrations_backup)" ]; then
@@ -57,7 +61,7 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add -A  # Asegura que se agreguen todos los archivos nuevos y modificados
+          git add -A  # Asegura que se agreguen todos los cambios
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
