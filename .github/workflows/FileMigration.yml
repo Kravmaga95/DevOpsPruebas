@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for migration files in test
         run: |
-          if [ -d "migrations" ] && [ "$(ls -A migrations)" ]; then
+          if [ -d "test/migrations" ] && [ "$(ls -A test/migrations)" ]; then
             echo "Migrations folder found in test."
           else
             echo "No migrations found in test, skipping."
@@ -56,11 +56,11 @@ jobs:
 
       - name: Sync migration files
         run: |
-          rsync -av --ignore-existing migrations/ demo/migrations/  # Solo copia archivos que no existen en demo
+          rsync -av --ignore-existing test/migrations/ migrations/  # Solo copia archivos que no existen en demo
 
       - name: Commit and push changes
         run: |
-          git add demo/migrations/*  # Asegura que solo los archivos de migrations se agreguen
+          git add migrations/*  # Asegura que solo los archivos de migrations se agreguen
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
