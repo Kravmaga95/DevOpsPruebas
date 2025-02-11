@@ -33,8 +33,12 @@ jobs:
 
       - name: Copy migration files to temp folder
         run: |
-          mkdir -p /tmp/migrations_backup
-          cp -r migrations/* /tmp/migrations_backup/
+          if [ -d "migrations" ]; then
+            mkdir -p /tmp/migrations_backup
+            cp -r migrations/* /tmp/migrations_backup/ || echo "No files to copy."
+          else
+            echo "No migrations folder found, skipping."
+          fi
 
       - name: Switch to demo branch
         run: |
@@ -44,7 +48,11 @@ jobs:
 
       - name: Sync migrations folder
         run: |
-          rsync -av --ignore-existing /tmp/migrations_backup/ migrations/
+          if [ -d "/tmp/migrations_backup" ] && [ "$(ls -A /tmp/migrations_backup)" ]; then
+            rsync -av --ignore-existing /tmp/migrations_backup/ migrations/
+          else
+            echo "No migration files to sync, skipping."
+          fi
 
       - name: Commit and push changes
         run: |
