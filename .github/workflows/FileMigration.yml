@@ -1,4 +1,4 @@
-name: Sync Migrations from Test to Demo
+name: Sync Migrations from Test to Demo (PR)
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
-          # Verifica si demo/migrations existe, si no, la crea en la ruta correcta dentro de la carpeta demo
+          # Verifica si la carpeta demo/migrations existe, si no, la crea dentro de demo
           if [ ! -d "demo/migrations" ]; then
             mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
             echo "Created migrations folder in demo."
@@ -48,26 +48,42 @@ jobs:
 
       - name: Copy migration files from test to demo
         run: |
-          # Copiar archivos de test/migrations a demo/migrations
-          echo "Copying migration files from test to demo..."
-          
-          # Verifica si la carpeta 'test/migrations' existe en la rama 'test' y luego copia los archivos
+          # Verifica si la carpeta 'test/migrations' existe y copia los archivos de migración
           if [ -d "test/migrations" ]; then
+            echo "Copying migration files from test/migrations to demo/migrations..."
             cp test/migrations/* demo/migrations/  # Copia los archivos desde test/migrations a demo/migrations
           else
             echo "No migrations folder in test, skipping copy."
             exit 1
           fi
 
-      - name: Commit and push changes
+      - name: Create a new branch for PR
         run: |
-          # Verifica si hubo cambios en demo/migrations y realiza commit si es necesario
-          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
+          # Crea una nueva rama a partir de demo para el PR
+          git checkout -b sync-migrations-to-demo
 
-          # Solo hace commit y push si hay cambios
+      - name: Commit the migration files
+        run: |
+          # Agrega los cambios de la carpeta demo/migrations
+          git add demo/migrations/*  # Solo agrega archivos nuevos o modificados en demo/migrations
+          
+          # Comitea si hay cambios
           if ! git diff --cached --quiet; then
             git commit -m "Sync migration files from test to demo"
-            git push origin demo || { echo "Push failed"; exit 1; }
           else
-            echo "No changes detected, skipping commit."
+            echo "No changes detected in demo/migrations, skipping commit."
+            exit 0
           fi
+
+      - name: Push the new branch
+        run: |
+          # Empuja la nueva rama al repositorio remoto
+          git push origin sync-migrations-to-demo
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          title: "Sync Migration Files from Test to Demo"
+          body: "This PR syncs migration files from the 'test' branch to 'demo/migrations'."
+          head: "sync-migrations-to-demo"
+          base: "demo"
