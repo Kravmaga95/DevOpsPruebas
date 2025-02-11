@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for migration files in test
         run: |
-          # Verifica que la carpeta test/migrations exista
+          # Verifica que la carpeta test/migrations exista desde la raíz del repositorio
           if [ -d "test/migrations" ] && [ "$(ls -A test/migrations)" ]; then
             echo "Migrations folder found in test."
           else
@@ -50,6 +50,7 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
+          # Asegura que la carpeta demo/migrations existe
           if [ ! -d "demo/migrations" ]; then
             mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
             echo "Created migrations folder in demo."
@@ -60,7 +61,7 @@ jobs:
           # Verifica que la carpeta test/migrations existe y es accesible
           if [ -d "test/migrations" ]; then
             echo "Copying files from test/migrations to demo/migrations"
-            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Solo copia archivos que no existen en demo
+            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Copia solo archivos que no existen en demo
           else
             echo "No migrations folder in test, skipping rsync."
             exit 1
