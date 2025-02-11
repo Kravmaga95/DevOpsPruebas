@@ -24,7 +24,7 @@ jobs:
 
       - name: Authenticate Git
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/DEVOPSPRUEBAS/demo.git
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Kravmaga95/DevOpsPruebas/tree/demo.git
 
       - name: Switch to test branch
         run: |
