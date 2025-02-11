@@ -27,67 +27,45 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Ensure demo branch is up-to-date
+      - name: Ensure test branch is up-to-date
         run: |
-          git fetch origin demo
-          git checkout demo || git checkout -b demo origin/demo
-          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
+          git checkout test
+          git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
 
-      - name: Ensure migrations folder exists in demo
+      - name: Copy migration files from test to temporary folder
         run: |
-          # Verifica si la carpeta demo/migrations existe, si no, la crea dentro de demo
-          if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
-            echo "Created migrations folder in demo."
-          fi
-
-      - name: Checkout test branch
-        run: |
-          # Cambia a la rama test para ver las migraciones
-          git checkout test || { echo "Error checking out test branch"; exit 1; }
-
-      - name: List files in test/migrations
-        run: |
-          # Listamos los archivos dentro de test/migrations para ver qué archivos existen
-          echo "Listing files in test/migrations"
-          ls -al test/migrations || echo "No migrations folder in test"
-
-      - name: List files in demo/migrations
-        run: |
-          # Listamos los archivos dentro de demo/migrations para ver qué archivos existen
-          echo "Listing files in demo/migrations"
-          ls -al demo/migrations || echo "No migrations folder in demo"
-
-      - name: Copy missing migration files from test to demo
-        run: |
-          # Verifica si la carpeta 'test/migrations' existe
+          # Verifica si la carpeta 'test/migrations' existe y copia los archivos a una carpeta temporal fuera del repo
           if [ -d "test/migrations" ]; then
-            echo "Checking for missing migration files in demo/migrations..."
-            
-            # Iterar sobre los archivos en test/migrations y copiar los que no están en demo/migrations
-            for file in test/migrations/*; do
-              # Si el archivo no existe en demo/migrations, lo copiamos
-              if [ ! -f "demo/migrations/$(basename $file)" ]; then
-                echo "Copying missing migration file: $(basename $file)"
-                cp "$file" "demo/migrations/"
-              else
-                echo "File $(basename $file) already exists in demo/migrations, skipping."
-              fi
-            done
+            echo "Copying migration files from test/migrations to temporary folder..."
+            mkdir -p /tmp/migrations  # Carpeta temporal fuera del repositorio
+            cp test/migrations/* /tmp/migrations/  # Copiar los archivos
           else
             echo "No migrations folder in test, skipping copy."
             exit 1
           fi
 
+      - name: Checkout demo branch
+        run: |
+          git fetch origin demo
+          git checkout demo || git checkout -b demo origin/demo
+          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
+
+      - name: Ensure demo/migrations folder exists
+        run: |
+          # Verifica si la carpeta demo/migrations existe, si no, la crea
+          if [ ! -d "demo/migrations" ]; then
+            mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
+            echo "Created migrations folder in demo."
+          fi
+
+      - name: Copy migration files from temporary folder to demo
+        run: |
+          # Copia los archivos de la carpeta temporal a demo/migrations
+          echo "Copying migration files from temporary folder to demo/migrations..."
+          cp /tmp/migrations/* demo/migrations/
+
       - name: Commit and push changes to demo
         run: |
-          # Verifica si hubo cambios en demo/migrations y realiza commit si es necesario
-          git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
-
-          # Solo hace commit y push si hay cambios
-          if ! git diff --cached --quiet; then
-            git commit -m "Sync missing migration files from test to demo"
-            git push origin demo || { echo "Push failed"; exit 1; }
-          else
-            echo "No changes detected, skipping commit."
-          fi
+          git add demo/migrations/*  # Agregar los archivos modificados
+          git commit -m "Sync migration files from test to demo"
+          git push origin demo || { echo "Push failed"; exit 1; }
