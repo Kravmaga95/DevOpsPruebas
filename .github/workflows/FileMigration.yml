@@ -66,9 +66,17 @@ jobs:
 
           # Verifica que la carpeta 'test/migrations' existe y luego usa rsync
           if [ -d "test/migrations" ]; then
-            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Copia solo los archivos que no existen en demo/migrations
+            # Copia solo los archivos que no existen en demo/migrations
+            for file in test/migrations/*; do
+              if [ ! -e "demo/migrations/$(basename $file)" ]; then
+                cp "$file" demo/migrations/
+                echo "Copied: $file"
+              else
+                echo "File $(basename $file) already exists in demo/migrations, skipping."
+              fi
+            done
           else
-            echo "No migrations folder in test, skipping rsync."
+            echo "No migrations folder in test, skipping."
             exit 1
           fi
 
