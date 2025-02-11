@@ -48,23 +48,18 @@ jobs:
           git checkout demo || git checkout -b demo origin/demo
           git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
 
+      - name: Copy migrations from test branch to demo branch
+        run: |
+          # Copia la carpeta test/migrations a demo/migrations usando el comando de checkout
+          git checkout test -- test/migrations
+          echo "Copied migrations from test to demo."
+
       - name: Ensure migrations folder exists in demo
         run: |
           # Asegura que la carpeta demo/migrations existe
           if [ ! -d "demo/migrations" ]; then
             mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
             echo "Created migrations folder in demo."
-          fi
-
-      - name: Sync migration files
-        run: |
-          # Verifica que la carpeta test/migrations existe y es accesible
-          if [ -d "test/migrations" ]; then
-            echo "Copying files from test/migrations to demo/migrations"
-            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Copia solo archivos que no existen en demo
-          else
-            echo "No migrations folder in test, skipping rsync."
-            exit 1
           fi
 
       - name: Commit and push changes
