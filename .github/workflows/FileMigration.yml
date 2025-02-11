@@ -5,17 +5,18 @@ on:
     branches:
       - test  # Se ejecuta cuando hay un push en la rama "test"
 
+permissions:
+  contents: write  # Permiso para escribir en el repo
+
 jobs:
   sync:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Obtener todo el historial para poder comparar ramas
+          fetch-depth: 0  # Obtener todo el historial para comparación
 
       - name: Configure Git user
         run: |
@@ -24,29 +25,29 @@ jobs:
 
       - name: Authenticate Git
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Kravmaga95/DevOpsPruebas.git
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Switch to test branch
+      - name: Ensure test branch is up-to-date
         run: |
           git checkout test
-          git pull origin test
+          git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
 
-      - name: Copy migration files to temp folder
+      - name: Backup migration files
         run: |
-          if [ -d "migrations" ]; then
+          if [ -d "migrations" ] && [ "$(ls -A migrations)" ]; then
             mkdir -p /tmp/migrations_backup
-            cp -r migrations/* /tmp/migrations_backup/ || echo "No files to copy."
+            rsync -av migrations/ /tmp/migrations_backup/
           else
-            echo "No migrations folder found, skipping."
+            echo "No migrations found, skipping backup."
           fi
 
       - name: Switch to demo branch
         run: |
-          git fetch origin demo  # Asegurar que la rama demo está actualizada
-          git checkout demo || git checkout -b demo origin/demo
-          git pull origin demo  # Traer los cambios más recientes
+          git fetch origin demo || echo "Demo branch does not exist yet."
+          git checkout demo 2>/dev/null || git checkout -b demo origin/demo
+          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
 
-      - name: Sync migrations folder
+      - name: Sync migration files
         run: |
           if [ -d "/tmp/migrations_backup" ] && [ "$(ls -A /tmp/migrations_backup)" ]; then
             rsync -av --ignore-existing /tmp/migrations_backup/ migrations/
@@ -58,8 +59,8 @@ jobs:
         run: |
           git add .
           if git diff --cached --quiet; then
-            echo "No changes to commit."
+            echo "No changes detected, skipping commit."
           else
-            git commit -m "Sync new migration files from test to demo"
-            git push origin demo
+            git commit -m "Sync migration files from test to demo"
+            git push origin demo || { echo "Push failed"; exit 1; }
           fi
