@@ -40,16 +40,17 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
+          # Verifica si demo/migrations existe, si no, la crea en la ruta correcta.
           if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
+            mkdir -p demo/migrations  # Crea la carpeta si no existe
             echo "Created migrations folder in demo."
           fi
 
       - name: Checkout migration files from test branch to demo branch
         run: |
           echo "Checking out migration files from test branch into demo/migrations..."
-          # Extrae los archivos de la rama test/migrations y los coloca directamente en demo/migrations
-          git checkout test -- test/migrations/*  # Usamos este comando para copiar solo los archivos, no las carpetas
+          # Extrae solo los archivos de test/migrations y los coloca directamente en demo/migrations
+          git checkout test -- test/migrations/*  # Copiar archivos de test/migrations en demo/migrations
 
       - name: Check for new files in demo/migrations and add them
         run: |
@@ -63,4 +64,3 @@ jobs:
           else
             git commit -m "Sync migration files from test to demo"
             git push origin demo || { echo "Push failed"; exit 1; }
-          fi
