@@ -62,3 +62,10 @@ jobs:
           git add demo/migrations/*  # Agregar los archivos modificados
           git commit -m "Sync migration files from test to demo"
           git push origin demo || { echo "Push failed"; exit 1; }
+      - name: Trigger Close PR workflow
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -d '{"ref": "main"}' \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/close-pr.yml/dispatches"
