@@ -43,21 +43,21 @@ jobs:
 
       - name: Switch to demo branch
         run: |
-          git fetch origin demo || echo "Demo branch does not exist yet."
-          git checkout demo 2>/dev/null || git checkout -b demo origin/demo
+          git fetch origin demo
+          git checkout -B demo origin/demo || git checkout -b demo
           git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
 
       - name: Sync migration files
         run: |
           if [ -d "/tmp/migrations_backup" ] && [ "$(ls -A /tmp/migrations_backup)" ]; then
-            rsync -av --ignore-existing /tmp/migrations_backup/ migrations/
+            rsync -av --delete /tmp/migrations_backup/ migrations/
           else
             echo "No migration files to sync, skipping."
           fi
 
       - name: Commit and push changes
         run: |
-          git add .
+          git add -A  # Asegura que se agreguen todos los archivos nuevos y modificados
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
