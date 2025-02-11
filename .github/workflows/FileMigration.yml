@@ -43,7 +43,7 @@ jobs:
 
       - name: Checkout test branch
         run: |
-          # Cambia a la rama test
+          # Cambia a la rama test para ver las migraciones
           git checkout test || { echo "Error checking out test branch"; exit 1; }
 
       - name: List files in test/migrations
@@ -79,7 +79,7 @@ jobs:
             exit 1
           fi
 
-      - name: Commit and push changes
+      - name: Commit and push changes to demo
         run: |
           # Verifica si hubo cambios en demo/migrations y realiza commit si es necesario
           git diff --quiet demo/migrations || git add demo/migrations/*  # Si hay cambios, agrega los archivos
