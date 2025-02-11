@@ -3,10 +3,10 @@ name: Sync Migrations from Test to Demo
 on:
   push:
     branches:
-      - test  # Se ejecuta cuando hay un push en la rama "test"
+      - test  # Este workflow se ejecuta cuando hay un push en la rama 'test'
 
 permissions:
-  contents: write  # Permiso para escribir en el repo
+  contents: write  # Permiso para escribir en el repositorio
 
 jobs:
   sync:
@@ -35,10 +35,8 @@ jobs:
       - name: Check for migration files in test
         run: |
           # Verifica que la carpeta test/migrations exista desde la raíz del repositorio
-          if [ -d "test/migrations" ] && [ "$(ls -A test/migrations)" ]; then
-            echo "Migrations folder found in test."
-          else
-            echo "No migrations found in test, skipping."
+          if [ ! -d "test/migrations" ]; then
+            echo "No migrations folder found in test, exiting."
             exit 1
           fi
 
@@ -52,38 +50,27 @@ jobs:
         run: |
           # Asegura que la carpeta demo/migrations existe, si no, la crea
           if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
+            mkdir -p demo/migrations  # Crea la carpeta si no existe
             echo "Created migrations folder in demo."
-          else
-            echo "Migrations folder already exists in demo."
           fi
 
-      - name: Copy migrations from test branch to demo branch
+      - name: Copy new migration files from test to demo
         run: |
+          # Copia solo los archivos que no existen en demo/migrations
           echo "Copying migration files from test to demo..."
           
-          # Hacer checkout de la rama 'test' para obtener las migraciones
-          git checkout test
+          # Verifica si la carpeta 'test/migrations' tiene archivos
+          for file in test/migrations/*; do
+            if [ ! -e "demo/migrations/$(basename $file)" ]; then
+              cp "$file" demo/migrations/
+              echo "Copied: $file"
+            else
+              echo "File $(basename $file) already exists in demo/migrations, skipping."
+            fi
+          done
 
-          # Verifica que la carpeta 'test/migrations' existe y luego copia los archivos
-          if [ -d "test/migrations" ]; then
-            # Copia solo los archivos que no existen en demo/migrations
-            for file in test/migrations/*; do
-              if [ ! -e "demo/migrations/$(basename $file)" ]; then
-                cp "$file" demo/migrations/
-                echo "Copied: $file"
-              else
-                echo "File $(basename $file) already exists in demo/migrations, skipping."
-              fi
-            done
-          else
-            echo "No migrations folder in test, skipping."
-            exit 1
-          fi
-
-      - name: Verify copied files
+      - name: Verify files copied to demo/migrations
         run: |
-          # Verifica los archivos copiados en demo/migrations
           echo "Listing files in demo/migrations after copy:"
           ls -l demo/migrations/
 
