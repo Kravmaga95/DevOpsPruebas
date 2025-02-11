@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Obtener todo el historial para poder comparar ramas
 
       - name: Configure Git user
         run: |
@@ -24,7 +24,7 @@ jobs:
 
       - name: Authenticate Git
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Kravmaga95/DevOpsPruebas/tree/demo.git
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/Kravmaga95/DevOpsPruebas.git
 
       - name: Switch to test branch
         run: |
@@ -38,12 +38,13 @@ jobs:
 
       - name: Switch to demo branch
         run: |
-          git checkout demo
-          git pull origin demo
+          git fetch origin demo  # Asegurar que la rama demo está actualizada
+          git checkout demo || git checkout -b demo origin/demo
+          git pull origin demo  # Traer los cambios más recientes
 
       - name: Sync migrations folder
         run: |
-          cp -n /tmp/migrations_backup/* migrations/
+          rsync -av --ignore-existing /tmp/migrations_backup/ migrations/
 
       - name: Commit and push changes
         run: |
