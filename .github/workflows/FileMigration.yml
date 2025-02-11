@@ -34,7 +34,7 @@ jobs:
 
       - name: Check for migration files in test
         run: |
-          # Verifica que la carpeta test/migrations exista en la raíz del repositorio
+          # Verifica que la carpeta test/migrations exista
           if [ -d "test/migrations" ] && [ "$(ls -A test/migrations)" ]; then
             echo "Migrations folder found in test."
           else
@@ -50,20 +50,18 @@ jobs:
 
       - name: Ensure migrations folder exists in demo
         run: |
-          # Asegura que la carpeta migrations existe en la raíz del repositorio
-          if [ ! -d "migrations" ]; then
-            mkdir migrations  # Crea la carpeta si no existe en demo
+          # Verifica si la carpeta demo/migrations existe y la crea si no
+          if [ ! -d "demo/migrations" ]; then
+            mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
             echo "Created migrations folder in demo."
           fi
 
       - name: Sync migration files
         run: |
           # Verifica que la carpeta test/migrations existe y es accesible
-          echo "Synchronizing migrations from test to demo..."
           if [ -d "test/migrations" ]; then
-            # Asegúrate de que la ruta de origen y destino son correctas
-            echo "Copying files from test/migrations to migrations"
-            rsync -av --ignore-existing test/migrations/ migrations/  # Solo copia archivos que no existen en demo
+            echo "Copying files from test/migrations to demo/migrations"
+            rsync -av --ignore-existing test/migrations/ demo/migrations/  # Solo copia archivos que no existen en demo/migrations
           else
             echo "No migrations folder in test, skipping rsync."
             exit 1
@@ -71,7 +69,7 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          git add migrations/*  # Asegura que solo los archivos de migrations se agreguen
+          git add demo/migrations/*  # Asegura que solo los archivos de migrations se agreguen
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
