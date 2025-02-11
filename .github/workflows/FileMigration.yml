@@ -54,17 +54,18 @@ jobs:
           if [ ! -d "demo/migrations" ]; then
             mkdir -p demo/migrations  # Crea la carpeta si no existe en demo
             echo "Created migrations folder in demo."
+          else
+            echo "Migrations folder already exists in demo."
           fi
 
       - name: Copy migrations from test branch to demo branch
         run: |
-          # Asegúrate de estar en la raíz del repositorio para que las rutas sean correctas
           echo "Copying migration files from test to demo..."
           
           # Hacer checkout de la rama 'test' para obtener las migraciones
           git checkout test
 
-          # Verifica que la carpeta 'test/migrations' existe y luego usa rsync
+          # Verifica que la carpeta 'test/migrations' existe y luego copia los archivos
           if [ -d "test/migrations" ]; then
             # Copia solo los archivos que no existen en demo/migrations
             for file in test/migrations/*; do
@@ -80,9 +81,16 @@ jobs:
             exit 1
           fi
 
+      - name: Verify copied files
+        run: |
+          # Verifica los archivos copiados en demo/migrations
+          echo "Listing files in demo/migrations after copy:"
+          ls -l demo/migrations/
+
       - name: Commit and push changes
         run: |
           git add demo/migrations/*  # Asegura que solo los archivos de migrations se agreguen
+          git status  # Verifica qué archivos están siendo agregados
           if git diff --cached --quiet; then
             echo "No changes detected, skipping commit."
           else
