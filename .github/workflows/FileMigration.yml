@@ -1,56 +1,77 @@
 name: Sync Migrations from Test to Demo
 
 on:
-  push:
+  pull_request:
     branches:
-      - test  # Se ejecuta cuando hay un push en la rama "test"
+      - demo  # Se ejecuta cuando se hace un PR a la rama "demo"
+    types:
+      - closed  # Solo se ejecuta cuando el PR es cerrado (mergeado)
+
+permissions:
+  contents: write  # Permiso para escribir en el repo
 
 jobs:
   sync:
+    if: github.event.pull_request.merged == true  # Solo ejecuta si el PR fue mergeado
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Obtener todo el historial para comparación
 
       - name: Configure Git user
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "kravmaga95"
+          git config --global user.email "edwardsalex8034@gmail.com"
 
       - name: Authenticate Git
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/DEVOPSPRUEBAS/demo.git
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
-      - name: Switch to test branch
+      - name: Ensure test branch is up-to-date
         run: |
           git checkout test
-          git pull origin test
+          git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
 
-      - name: Copy migration files to temp folder
+      - name: Copy migration files from test to temporary folder
         run: |
-          mkdir -p /tmp/migrations_backup
-          cp -r migrations/* /tmp/migrations_backup/
+          if [ -d "test/migrations" ]; then
+            echo "Copying migration files from test/migrations to temporary folder..."
+            mkdir -p /tmp/migrations  # Carpeta temporal fuera del repositorio
+            cp test/migrations/* /tmp/migrations/  # Copiar los archivos
+          else
+            echo "No migrations folder in test, skipping copy."
+            exit 1
+          fi
 
-      - name: Switch to demo branch
+      - name: Checkout demo branch
         run: |
-          git checkout demo
-          git pull origin demo
+          git fetch origin demo
+          git checkout demo || git checkout -b demo origin/demo
+          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
 
-      - name: Sync migrations folder
+      - name: Ensure demo/migrations folder exists
         run: |
-          cp -n /tmp/migrations_backup/* migrations/
+          if [ ! -d "demo/migrations" ]; then
+            mkdir -p demo/migrations  # Crea la carpeta demo/migrations si no existe
+            echo "Created migrations folder in demo."
+          fi
 
-      - name: Commit and push changes
+      - name: Copy migration files from temporary folder to demo
         run: |
-          git add .
+          echo "Copying migration files from temporary folder to demo/migrations..."
+          cp /tmp/migrations/* demo/migrations/
+
+      - name: Commit and push changes to demo
+        run: |
+          git add demo/migrations/*  # Agregar los archivos modificados
+          
+          # Verifica si hay cambios antes de hacer commit
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Sync new migration files from test to demo"
-            git push origin demo
+            git commit -m "Sync migration files from test to demo"
+            git push origin demo || { echo "Push failed"; exit 1; }
           fi
