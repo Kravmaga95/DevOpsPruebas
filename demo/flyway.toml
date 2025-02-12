@@ -1,6 +1,6 @@
 databaseType = "SqlServer"
-id = "3ba257cb-eb1e-490d-832f-e63b6d804641"
-name = "test"
+id = "9e6d3d79-9e7f-4de8-8b2c-3a761b270402"
+name = "demo"
 
 [flyway]
 defaultSchema = "dbo"
@@ -116,5 +116,5 @@ ignoreWithElementOrder = true
 ignoreWithEncryption = false
 ignoreWithNoCheck = true
 
-[environments.test]
-url = "jdbc:sqlserver://1IHTPORTHV4H\\SQLEXPRESS;databaseName=prueba;encrypt=true;integratedSecurity=true;trustServerCertificate=true"
+[environments.demo]
+url = "jdbc:sqlserver://1IHTPORTHV4H\\DEMO;databaseName=prueba;encrypt=true;integratedSecurity=true;trustServerCertificate=true"

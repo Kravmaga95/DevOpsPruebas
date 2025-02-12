@@ -31,8 +31,14 @@ jobs:
       
       - name: Ensure demo branch is up-to-date
         run: |
-          git checkout -- demo
-          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
+          if git ls-remote --exit-code --heads origin demo; then
+            git fetch origin demo  # Asegura que la rama demo esté disponible en local
+            git checkout demo || git checkout -b demo origin/demo  # Checkout demo si existe o crea la rama localmente
+            git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
+          else
+            echo "Branch 'demo' does not exist in the remote repository."
+            exit 1
+          fi
       
       - name: Copy migration files from demo to temporary folder
         run: |
