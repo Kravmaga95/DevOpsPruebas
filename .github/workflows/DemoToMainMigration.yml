@@ -1,9 +1,11 @@
-name: Sync Migrations from Test to Demo
-
 on:
-  push:
+  pull_request:
     branches:
-      - test  # Se ejecuta cuando hay un push en la rama "test"
+      - main  # Se ejecuta cuando se crea un PR hacia la rama "main"
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write  # Permiso para escribir en el repo
@@ -27,42 +29,51 @@ jobs:
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
       
-      - name: Ensure test branch is up-to-date
+      - name: Ensure demo branch is up-to-date
         run: |
-          git checkout test
-          git pull --ff-only origin test || { echo "Error pulling test branch"; exit 1; }
-      
-      - name: Copy migration files from test to temporary folder
-        run: |
-          if [ -d "test/migrations" ]; then
-            echo "Copying migration files from test/migrations to temporary folder..."
-            mkdir -p /tmp/migrations
-            cp test/migrations/* /tmp/migrations/
+          if git ls-remote --exit-code --heads origin demo; then
+            git fetch origin demo  # Asegura que la rama demo esté disponible en local
+            git checkout demo || git checkout -b demo origin/demo  # Checkout demo si existe o crea la rama localmente
+            git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
           else
-            echo "No migrations folder in test, skipping copy."
+            echo "Branch 'demo' does not exist in the remote repository."
             exit 1
           fi
       
-      - name: Checkout demo branch
+      - name: Copy migration files from demo to temporary folder
         run: |
-          git fetch origin demo
-          git checkout demo
-          git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
-      
-      - name: Ensure demo/migrations folder exists
-        run: |
-          if [ ! -d "demo/migrations" ]; then
-            mkdir -p demo/migrations
-            echo "Created migrations folder in demo."
+          # Verifica si la carpeta 'demo/migrations' existe y copia los archivos a una carpeta temporal fuera del repo
+          if [ -d "demo/migrations" ]; then
+            echo "Copying migration files from demo/migrations to temporary folder..."
+            mkdir -p /tmp/migrations  # Carpeta temporal fuera del repositorio
+            cp demo/migrations/* /tmp/migrations/  # Copiar los archivos
+          else
+            echo "No migrations folder in demo, skipping copy."
+            exit 1
           fi
       
-      - name: Copy migration files from temporary folder to demo
+      - name: Checkout main branch
         run: |
-          echo "Copying migration files from temporary folder to demo/migrations..."
-          cp /tmp/migrations/* demo/migrations/
+          git fetch origin main
+          git checkout -- main || git checkout -b main origin/main
+          git pull --ff-only origin main || { echo "Error pulling main branch"; exit 1; }
       
-      - name: Commit and push changes to demo
+      - name: Ensure prod/migrations folder exists in main
         run: |
-          git add demo/migrations/*
-          git commit -m "Sync migration files from test to demo" || echo "No changes to commit"
-          git push origin demo || { echo "Push failed"; exit 1; }
+          # Verifica si la carpeta prod/migrations existe en main, si no, la crea
+          if [ ! -d "prod/migrations" ]; then
+            mkdir -p prod/migrations  # Crea la carpeta prod/migrations si no existe
+            echo "Created prod/migrations folder in main."
+          fi
+      
+      - name: Copy migration files from temporary folder to prod/migrations
+        run: |
+          # Copia los archivos de la carpeta temporal a prod/migrations
+          echo "Copying migration files from temporary folder to prod/migrations..."
+          cp /tmp/migrations/* prod/migrations/
+      
+      - name: Commit and push changes to main
+        run: |
+          git add prod/migrations/*  # Agregar los archivos modificados
+          git commit -m "Sync migration files from demo to main"
+          git push origin main || { echo "Push failed"; exit 1; }
