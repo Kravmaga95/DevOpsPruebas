@@ -70,4 +70,6 @@ jobs:
         run: |
           git add prod/migrations/*  # Agregar los archivos modificados
           git commit -m "Sync migration files from demo to main"
+
           git push origin main || { echo "Push failed"; exit 1; }
+
