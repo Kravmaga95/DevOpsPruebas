@@ -1,9 +1,7 @@
-name: Sync Migrations from Demo to Main
-
 on:
   pull_request:
     branches:
-      - main  # Se ejecuta automáticamente al crear o actualizar un PR hacia "main"
+      - main  # Se ejecuta cuando se crea un PR hacia la rama "main"
     types:
       - opened
       - synchronize
@@ -11,11 +9,11 @@ on:
 
 permissions:
   contents: write  # Permiso para escribir en el repo
-  checks: write  # Permiso para bloquear el PR si falla el job
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,43 +31,43 @@ jobs:
       
       - name: Ensure demo branch is up-to-date
         run: |
-          git checkout demo || { echo "Error: branch 'demo' not found"; exit 1; }
+          git checkout -- demo
           git pull --ff-only origin demo || { echo "Error pulling demo branch"; exit 1; }
       
       - name: Copy migration files from demo to temporary folder
         run: |
+          # Verifica si la carpeta 'demo/migrations' existe y copia los archivos a una carpeta temporal fuera del repo
           if [ -d "demo/migrations" ]; then
             echo "Copying migration files from demo/migrations to temporary folder..."
-            mkdir -p /tmp/migrations
-            cp demo/migrations/* /tmp/migrations/
+            mkdir -p /tmp/migrations  # Carpeta temporal fuera del repositorio
+            cp demo/migrations/* /tmp/migrations/  # Copiar los archivos
           else
-            echo "Error: No migrations folder in demo."
+            echo "No migrations folder in demo, skipping copy."
             exit 1
           fi
       
       - name: Checkout main branch
         run: |
           git fetch origin main
-          git checkout main || git checkout -b main origin/main
+          git checkout -- main || git checkout -b main origin/main
           git pull --ff-only origin main || { echo "Error pulling main branch"; exit 1; }
       
       - name: Ensure prod/migrations folder exists in main
         run: |
+          # Verifica si la carpeta prod/migrations existe en main, si no, la crea
           if [ ! -d "prod/migrations" ]; then
-            mkdir -p prod/migrations
+            mkdir -p prod/migrations  # Crea la carpeta prod/migrations si no existe
             echo "Created prod/migrations folder in main."
           fi
       
       - name: Copy migration files from temporary folder to prod/migrations
         run: |
+          # Copia los archivos de la carpeta temporal a prod/migrations
           echo "Copying migration files from temporary folder to prod/migrations..."
           cp /tmp/migrations/* prod/migrations/
       
       - name: Commit and push changes to main
         run: |
-          git add prod/migrations/*
-          git commit -m "Sync migration files from demo to main" || echo "No changes to commit"
+          git add prod/migrations/*  # Agregar los archivos modificados
+          git commit -m "Sync migration files from demo to main"
           git push origin main || { echo "Push failed"; exit 1; }
-
-    # Bloquea el merge si el workflow falla
-    required: true
