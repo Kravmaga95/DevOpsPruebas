@@ -1,29 +1,19 @@
-name: Close Pull Request for Test to Demo
+name: Close PRs Automatically
 
 on:
-  workflow_run:
-    workflows: ["Sync Migrations from Test to Demo"]  # Depende del flujo anterior
-    types:
-      - completed
-
-permissions:
-  pull-requests: write  # Permiso para escribir en pull requests
+  pull_request:
+    types: [opened, synchronize]  # Se activa cuando se abre o se sincroniza un PR
 
 jobs:
   close-pr:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Close open pull request from test to demo
+      - name: Close pull request if pushed to test or demo
+        if: |
+          github.event.pull_request.head.ref == 'test' || github.event.pull_request.head.ref == 'demo'
         run: |
-          PR_ID=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:test&base=demo" | \
-            jq '.[0].id')
-          if [ "$PR_ID" != "null" ]; then
-            echo "Closing pull request with ID $PR_ID..."
-            curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -d '{"state": "closed"}' \
-              "https://api.github.com/repos/${{ github.repository }}/pulls/$PR_ID"
-          else
-            echo "No open pull request found for test to demo."
-          fi
+          echo "PR targeting test or demo branch. Closing PR automatically."
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -d '{"state": "closed"}' \
+          "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}"
