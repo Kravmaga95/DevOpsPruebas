@@ -1,15 +1,18 @@
 name: Sync Migrations from Test to Demo
 
 on:
-  push:
+  pull_request:
     branches:
-      - test  # Se ejecuta cuando hay un push en la rama "test"
+      - demo  # Se ejecuta cuando se hace un PR a la rama "demo"
+    types:
+      - closed  # Solo se ejecuta cuando el PR es cerrado (mergeado)
 
 permissions:
   contents: write  # Permiso para escribir en el repo
 
 jobs:
   sync:
+    if: github.event.pull_request.merged == true  # Solo ejecuta si el PR fue mergeado
     runs-on: ubuntu-latest
 
     steps:
@@ -72,4 +75,3 @@ jobs:
             git commit -m "Sync migration files from test to demo"
             git push origin demo || { echo "Push failed"; exit 1; }
           fi
-
