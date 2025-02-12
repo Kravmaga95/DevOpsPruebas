@@ -1,5 +1,5 @@
 databaseType = "SqlServer"
-id = "dc11b21e-7756-4c3f-83f4-bc7e7a76bbec"
+id = "9e6d3d79-9e7f-4de8-8b2c-3a761b270402"
 name = "demo"
 
 [flyway]
