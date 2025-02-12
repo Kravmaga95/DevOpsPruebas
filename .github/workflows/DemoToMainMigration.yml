@@ -3,14 +3,14 @@ name: Sync Migrations from Demo to Main
 on:
   pull_request:
     branches:
-      - main  # Se ejecuta automáticamente al crear o actualizar un PR hacia "main"
+      - main
     types:
       - opened
       - synchronize
       - reopened
 
 permissions:
-  contents: write  # Permiso para escribir en el repo
+  contents: write
   checks: write  # Permiso para bloquear el PR si falla el job
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Obtener todo el historial para comparación
+          fetch-depth: 0  
 
       - name: Configure Git user
         run: |
@@ -70,6 +70,3 @@ jobs:
           git add prod/migrations/*
           git commit -m "Sync migration files from demo to main" || echo "No changes to commit"
           git push origin main || { echo "Push failed"; exit 1; }
-
-    # Bloquea el merge si el workflow falla
-    required: true
